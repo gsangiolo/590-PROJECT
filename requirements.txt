@@ -1,4 +1,5 @@
 tensorflow-gpu == 2.6.0
+keras == 2.6.0
 pandas
 numpy
 scikit-learn
@@ -6,3 +7,4 @@ scikit-image
 matplotlib
 tqdm
 pydot
+tensorboard
