@@ -130,3 +130,7 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+galaxy-zoo-the-galaxy-challenge/all_ones_benchmark.csv
+galaxy-zoo-the-galaxy-challenge/all_zeros_benchmark.csv
+galaxy-zoo-the-galaxy-challenge/central_pixel_benchmark.csv
+galaxy-zoo-the-galaxy-challenge/training_solutions_rev1.csv
