@@ -16,7 +16,7 @@ import keras_tuner as kt
 import seaborn as sns
 import os
 import pandas as pd
-get_ipython().run_line_magic('matplotlib', 'inline')
+#get_ipython().run_line_magic('matplotlib', 'inline')
 sns.set()
 
 
@@ -47,9 +47,19 @@ print(img)
 
 # In[18]:
 
+images = []
+image_names = []
+max_images = 1000
+count = 0
 
 for filename in os.listdir(dir):
-    print(os.path.join(dir, filename))
+    if count >= max_images:
+        break
+    #print(os.path.join(dir, filename))
+    img = cv.imread(os.path.join(dir, filename))
+    images.append(img)
+    image_names.append(filename[:-4])
+    count += 1
 
 
 # In[20]:
@@ -58,6 +68,12 @@ for filename in os.listdir(dir):
 solutions = pd.read_csv('../images_training_rev1/training_solutions_rev1/training_solutions_rev1.csv')
 solutions.head()
 
+y = []
+
+for name in image_names:
+    print(solutions[solutions['GalaxyID']==name,])
+    y.append(np.argmax(np.array(solutions[solutions['GalaxyID'] == name].drop('GalaxyID', axis=1))))
+    print(y)
 
 # In[24]:
 
