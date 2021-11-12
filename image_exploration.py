@@ -36,14 +36,13 @@ img = cv.imread(dir + filename)
 # In[15]:
 
 
-plt.imshow(img)
+#plt.imshow(img)
 
 
 # In[16]:
 
 
-print(img)
-
+print(img.shape)
 
 # In[18]:
 
@@ -61,19 +60,25 @@ for filename in os.listdir(dir):
     image_names.append(filename[:-4])
     count += 1
 
+images = np.array(images)
+
+images = images.reshape((images.shape[0], images[0].shape[0] * images[0].shape[1] * images[0].shape[2]))
+
 
 # In[20]:
 
 
 solutions = pd.read_csv('../images_training_rev1/training_solutions_rev1/training_solutions_rev1.csv')
-solutions.head()
+#solutions.head()
 
 y = []
 
 for name in image_names:
-    print(solutions[solutions['GalaxyID']==name,])
-    y.append(np.argmax(np.array(solutions[solutions['GalaxyID'] == name].drop('GalaxyID', axis=1))))
-    print(y)
+#    print("Test", name)
+#    print(solutions.head())
+#    print(solutions.loc[solutions['GalaxyID']==int(name)])
+    y.append(np.argmax(np.array(solutions[solutions['GalaxyID'] == int(name)].drop('GalaxyID', axis=1))))
+#    print("Y: ", y[-1])
 
 # In[24]:
 
@@ -81,9 +86,13 @@ for name in image_names:
 classes = solutions.columns[1:].tolist()
 n_classes = len(classes)
 
-
 # In[ ]:
 
+x_train, x_test, y_train, y_test = train_test_split(images, y, test_size=0.2)
+
+lb = LabelEncoder()
+y_train = lb.fit_transform(y_train)
+y_test = lb.transform(y_test)
 
 # From Tensorflow Docs:
 def model_builder(hp):
@@ -94,7 +103,7 @@ def model_builder(hp):
     # Choose an optimal value between 32-512
     hp_units = hp.Int('units', min_value=32, max_value=512, step=32)
     model.add(layers.Dense(units=hp_units, activation='relu'))
-    model.add(layers.Dense(n_bins, activation='softmax'))
+    model.add(layers.Dense(n_classes, activation='softmax'))
 
     # Tune the learning rate for the optimizer
     # Choose an optimal value from 0.01, 0.001, or 0.0001
