@@ -12,6 +12,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
 from tensorflow.keras import layers, models, Sequential, optimizers, losses, metrics, datasets, callbacks
 from tensorflow import matmul
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
 import keras_tuner as kt
 import seaborn as sns
 import os
@@ -62,7 +63,7 @@ for filename in os.listdir(dir):
 
 images = np.array(images)
 
-images = images.reshape((images.shape[0], images[0].shape[0] * images[0].shape[1] * images[0].shape[2]))
+#images = images.reshape((images.shape[0], images[0].shape[0] * images[0].shape[1] * images[0].shape[2]))
 
 
 # In[20]:
@@ -86,7 +87,32 @@ for name in image_names:
 classes = solutions.columns[1:].tolist()
 n_classes = len(classes)
 
-# In[ ]:
+datagen = ImageDataGenerator()
+datagen.fit(images)
+
+print(images.shape)
+print(len(y))
+
+it = datagen.flow(images, y)
+
+count = 0
+for item in it:
+    print(item[0].shape)
+    print(item[1].shape)
+    images = np.append(images, item[0], axis=0)
+    y = np.append(y, item[1])
+    print(images.shape)
+    print(y.shape)
+    if count >= 2:
+        break
+    if count % 100 == 0:
+        print(count)
+    count += 1
+
+print(images.shape)
+print(len(y))
+
+images = images.reshape((images.shape[0], images[0].shape[0] * images[0].shape[1] * images[0].shape[2]))
 
 x_train, x_test, y_train, y_test = train_test_split(images, y, test_size=0.2)
 
@@ -97,6 +123,7 @@ y_test = lb.transform(y_test)
 # From Tensorflow Docs:
 def model_builder(hp):
     model = Sequential()
+
     model.add(layers.Flatten(input_shape=(1, x_train.shape[1])))
 
     # Tune the number of units in the first Dense layer
@@ -129,6 +156,7 @@ tuner = kt.Hyperband(model_builder,
 stop_early = callbacks.EarlyStopping(monitor='val_loss', patience=5)
 
 tuner.search(x_train, y_train, epochs=50, validation_split=0.2, batch_size=128, callbacks=[stop_early])
+#tuner.search(it, epochs=50, validation_split=0.2, batch_size=128, callbacks=[stop_early])
 
 # Get the optimal hyperparameters
 best_hps=tuner.get_best_hyperparameters(num_trials=1)[0]
