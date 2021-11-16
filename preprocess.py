@@ -11,4 +11,3 @@ def preprocess_image(image, image_size):
     image = tf.cast(image, tf.float32) / 255.0  # normalize to [0,1] range
 
     return image
-
