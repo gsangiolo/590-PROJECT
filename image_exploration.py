@@ -33,7 +33,11 @@ sns.set()
 #print(img.shape)
 
 def get_all_images_from_directory(dir, max_images=1000):
-    images = []
+    for filename in os.listdir(dir):
+        sample_img = cv.imread(os.path.join(dir, filename))
+        break
+    shape = sample_img.shape
+    images = np.zeros(shape=(max_images, shape[0], shape[1], shape[2]))
     image_names = []
     #max_images = 1000
     count = 0
@@ -43,11 +47,11 @@ def get_all_images_from_directory(dir, max_images=1000):
             break
         #print(os.path.join(dir, filename))
         img = cv.imread(os.path.join(dir, filename))
-        images.append(img)
+        images[count] = img
         image_names.append(filename[:-4])
         count += 1
 
-    images = np.array(images)
+    #images = np.array(images)
     return images, image_names
 
 
