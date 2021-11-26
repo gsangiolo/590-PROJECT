@@ -1,13 +1,13 @@
-import logo from './logo.svg';
 import './App.css';
+import UploadImage from './UploadImage';
 
 function App() {
   return (
     <div className="App">
       <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
+        <img src='./img/100128.jpg' alt='logo'/>
         <p>
-          Edit <code>src/App.js</code> and save to reload.
+          Explore Galaxy Identification with Our Tools Below!
         </p>
         <a
           className="App-link"
@@ -19,19 +19,20 @@ function App() {
         </a>
       </header>
       <body>
-	<p>
-	  Search Bar Here! Search for images!
-	</p>
-	<p>
-	  Browse examples from our gallery -- selector for classes
-	</p>
-	<p>
-	  Got an image? Upload it here to classify it!
-	</p>
-	<p>
-	  Selector for which model to use
-	</p>
-      </body>
+	  <p>
+	    Search Bar Here! Search for images!
+	  </p>
+	  <p>
+	    Browse examples from our gallery -- selector for classes
+	  </p>
+	  <p>
+	    Got an image? Upload it here to classify it! (Make the model input field an autocomplete)
+	  </p>
+	  <UploadImage />
+	  <p>
+	    Browse Model Options
+	  </p>
+        </body>
     </div>
   );
 }
