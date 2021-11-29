@@ -6,4 +6,7 @@ class ModelParams():
 
     def train_model(self):
         # Do something in the background/async
-        return 
+        return
+
+class ImageUpload(BaseModel):
+    image: str
