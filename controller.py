@@ -39,7 +39,7 @@ async def show_image_by_id(image_id: str):
     return StreamingResponse(io.BytesIO(image.tobytes()), media_type='image/png')
 
 @app.get("/images/random")
-async def show_random_image():
+async def show_random_image(hash: str = ''):
     image = image_service.getRandomImage()
     return StreamingResponse(io.BytesIO(image.tobytes()), media_type='image/png')
 
