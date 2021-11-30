@@ -4,7 +4,7 @@ import pandas as pd
 # import tqdm
 import datetime
 import os
-from preprocess import preprocess_image
+# from utils import preprocess_image
 import tensorflow as tf
 from sklearn.model_selection import train_test_split
 from utils.util import *
@@ -17,14 +17,20 @@ from tensorflow.keras.utils import plot_model
 from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
 
 ORIGINAL_SIZE = 424
-IMG_SIZE = 128
+IMG_SIZE = 424
 BATCH_SIZE = 32
 # MODEL = 'XCEPTION'
-MODEL = 'DFF'
-# MODEL = 'SimpleCNN'
+# MODEL = 'DFF'
+MODEL = 'SimpleCNN'
 
 data_dir = 'galaxy-zoo-the-galaxy-challenge/images_training_rev1'
-labels_df = pd.read_csv('galaxy-zoo-the-galaxy-challenge/training_solutions_rev1.csv')
+solution_dir = 'galaxy-zoo-the-galaxy-challenge/training_solutions_rev1.csv'
+
+physical_devices = tf.config.experimental.list_physical_devices('GPU')
+tf.config.experimental.set_memory_growth(physical_devices[0], True)
+
+
+# labels_df = pd.read_csv('galaxy-zoo-the-galaxy-challenge/training_solutions_rev1.csv')
 # labels_df.set_index('GalaxyID', inplace=True)
 
 # (X_train, X_test, y_train, y_test) = train_test_split(labels_df.index.astype(int).astype(str),
@@ -86,6 +92,7 @@ labels_df = pd.read_csv('galaxy-zoo-the-galaxy-challenge/training_solutions_rev1
 
 def split_and_encode(images, y, test_size=0.2):
     x_train, x_test, y_train, y_test = train_test_split(images, y, test_size=test_size)
+    print("X_train shape:", x_train.shape)
 
     if not multiclass:
         lb = LabelEncoder()
@@ -113,6 +120,9 @@ def model_builder(hp):
         # Choose an optimal value from 0.01, 0.001, or 0.0001
         hp_learning_rate = hp.Choice('learning_rate', values=[1e-2, 1e-3, 1e-4])
 
+        # save plot 
+        plot_model(model, show_shapes=True, to_file=f'{model.name}.jpg')
+
         if not multiclass:
             model.compile(optimizer=optimizers.Adam(learning_rate=hp_learning_rate),
                         loss=losses.SparseCategoricalCrossentropy(from_logits=True),
@@ -123,8 +133,10 @@ def model_builder(hp):
                     metrics=['accuracy'])
     
     elif MODEL == 'SimpleCNN':
-        model = SimpleCNN(img_size=IMG_SIZE, num_classes=n_classes)
+        model = SimpleCNN(img_size=IMG_SIZE, batch_size=x_train.shape[0], num_classes=n_classes)
         hp_learning_rate = hp.Choice('learning_rate', values=[1e-5, 1e-6, 1e-7])
+        # save plot 
+        plot_model(model, show_shapes=True, to_file=f'{model.name}.jpg')
         if not multiclass:
             model.compile(optimizer=optimizers.Adam(learning_rate=hp_learning_rate),
                         loss=losses.SparseCategoricalCrossentropy(from_logits=True),
@@ -135,8 +147,10 @@ def model_builder(hp):
                     metrics=['accuracy'])
     
     elif MODEL == 'XCEPTION':
-        model = Xception(img_size=IMG_SIZE, num_classes=n_classes)
+        model = Xception(img_size=IMG_SIZE, batch_size=x_train.shape[0], num_classes=n_classes)
         hp_learning_rate = hp.Choice('learning_rate', values=[1e-5, 1e-6, 1e-7])
+        # save plot 
+        plot_model(model, show_shapes=True, to_file=f'{model.name}.jpg')
         if not multiclass:
             model.compile(optimizer=optimizers.RMSprop(learning_rate=hp_learning_rate),
                         loss=losses.SparseCategoricalCrossentropy(from_logits=True),
@@ -148,45 +162,50 @@ def model_builder(hp):
     return model
 
 
-def tune_hyperparams(x_train, y_train):
-    tuner = kt.Hyperband(model_builder,
-                         objective='val_accuracy',
-                         max_epochs=10,
-                         factor=3,
-                         directory='my_dir',
-                         project_name='intro_to_kt')
+def fit_model_from_hps(x_train, y_train, x_test, y_test, hyperband=True):
+    if hyperband:
+        tuner = kt.Hyperband(model_builder,
+                            objective='val_accuracy',
+                            max_epochs=10,
+                            factor=3,
+                            # overwrite=True,
+                            # max_trail = 3
+                            )
+    else:
+        tuner = kt.RandomSearch(model_builder,
+                                objective='val_accuracy',
+                                max_trials=4)
 
     stop_early = callbacks.EarlyStopping(monitor='val_loss', patience=5)
 
-    tuner.search(x_train, y_train, epochs=50, validation_split=0.2, batch_size=128, callbacks=[stop_early, keras.callbacks.TensorBoard(log_dir='logs/fit/tuner')])
+    tuner.search(x_train, y_train, epochs=50, validation_split=0.2, batch_size=16, callbacks=[stop_early, keras.callbacks.TensorBoard(log_dir='logs/fit/tuner')])
     #tuner.search(it, epochs=50, validation_split=0.2, batch_size=128, callbacks=[stop_early])
 
     # Get the optimal hyperparameters
     best_hps=tuner.get_best_hyperparameters(num_trials=1)[0]
 
-    print(f"""
-    The hyperparameter search is complete. The optimal number of units in the first densely-connected
-    layer is {best_hps.get('units')} and the optimal learning rate for the optimizer
-    is {best_hps.get('learning_rate')}.
-    """)
-    return best_hps
+    # print(f"""
+    # The hyperparameter search is complete. The optimal number of units in the first densely-connected
+    # layer is {best_hps.get('units')} and the optimal learning rate for the optimizer
+    # is {best_hps.get('learning_rate')}.
+    # """)
 
+    # # Build the model with the optimal hyperparameters and train it on the data for 50 epochs
+    # model = tuner.hypermodel.build(best_hps)
+    # # model.name = 'hypermodel' + MODEL
 
-def fit_model_from_hps(best_hps, x_train, y_train, x_test, y_test):
-    # Build the model with the optimal hyperparameters and train it on the data for 50 epochs
-    model = tuner.hypermodel.build(best_hps)
-    history = model.fit(x_train, y_train, epochs=50, validation_split=0.2)
+    # history = model.fit(x_train, y_train, epochs=20, validation_split=0.2)
 
-    val_acc_per_epoch = history.history['val_accuracy']
-    best_epoch = val_acc_per_epoch.index(max(val_acc_per_epoch)) + 1
-    print('Best epoch: %d' % (best_epoch,))
+    # val_acc_per_epoch = history.history['val_accuracy']
+    # best_epoch = val_acc_per_epoch.index(max(val_acc_per_epoch)) + 1
+    # print('Best epoch: %d' % (best_epoch,))
 
     hypermodel = tuner.hypermodel.build(best_hps)
-    hypermodel.name = 'hypermodel ' + MODEL
+    # hypermodel.name = 'hypermodel ' + MODEL
 
     # bast model checkout and early stopping
-    checkout_best_model = 'weights/Best_Model.h5'
-    es = EarlyStopping(monitor='val_loss', mode='min', verbose=1, patience=150)
+    checkout_best_model = 'weights/Best_Model_' + hypermodel.name + '.h5'
+    # es = EarlyStopping(monitor='val_loss', mode='min', verbose=1, patience=150)
     mc = ModelCheckpoint(checkout_best_model, monitor='val_loss', mode='min', verbose=1, save_best_only=True)
 
     # define tensorboard callback
@@ -194,7 +213,18 @@ def fit_model_from_hps(best_hps, x_train, y_train, x_test, y_test):
     tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1)
 
     # Retrain the model
-    history = hypermodel.fit(x_train, y_train, epochs=best_epoch, validation_split=0.2)
+    history = hypermodel.fit(x_train, y_train, 
+                            epochs=50, 
+                            validation_split=0.2,
+                            # steps_per_epoch=x_train.shape[0] // BATCH_SIZE, 
+                            use_multiprocessing=True,
+                            # validation_steps=X_test.shape[0] // BATCH_SIZE, 
+                            # validation_data=ds_test,
+                            callbacks=[
+                            # es, 
+                            mc, 
+                            tensorboard_callback]
+                            )
 
 
     eval_result = hypermodel.evaluate(x_test, y_test)
@@ -209,10 +239,13 @@ if __name__ == '__main__':
     multiclass = True
     images, image_names = get_all_images_from_directory(data_dir)
     global classes
-    y, classes = get_image_labels(images, image_names, data_dir, multiclass_threshold=0.5)
+    y, classes = get_image_labels(images, image_names, solution_dir, multiclass_threshold=0.5)
     global n_classes
     n_classes = len(classes)
-    images, y = generate_new_image_data(images, y, max_it=2)
+    if MODEL == 'DFF':
+        images, y = generate_new_image_data(images, y, max_it=2)
+    else:
+        images, y = generate_new_image_data(images, y, max_it=1, return_images=True)
     x_train, x_test, y_train, y_test = split_and_encode(images, y, test_size=0.2)
-    best_hps = tune_hyperparams(x_train, y_train)
-    history, eval_result = fit_model_from_hps(best_hps, x_train, y_train, x_test, y_test)
+    if MODEL != 'XCEPTION':
+        history, eval_result = fit_model_from_hps(x_train, y_train, x_test, y_test)
