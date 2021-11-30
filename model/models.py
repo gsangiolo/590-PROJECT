@@ -64,7 +64,7 @@ def Xception_Img(img_size, num_classes):
         layer.trainable = False
     
     model._name = "Xception"
-    
+
     return model
 
 def Inception(img_size, num_classes):
