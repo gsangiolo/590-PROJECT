@@ -108,9 +108,14 @@ class UploadImage extends Component {
 					</p>
 					<input type='submit'/>
 					<p>
-						Result:
+						Classification(s):
 					</p>
-					<p>{this.state.predictResult}</p>
+					<p>
+						{
+							this.state && this.state.predictResult && 
+							this.state.predictResult.map(res => res + '\t')
+						}
+					</p>
 				</form>
 			</div>
 		);
