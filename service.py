@@ -22,10 +22,16 @@ class ImagePredictor:
         print(image_reshape.shape)
         print("\n\n")
         model = self.loadModelFromS3(modelName)
-        result = model.predict(image_reshape)
+        try:
+            result = model.predict(image_reshape)
+        except:
+            # Probably the wrong shape!
+            image = cv2.resize(image, (128, 128), interpolation=cv2.INTER_AREA)
+            image_reshape = np.reshape(image, (1, 128, 128, 3))
+            result = model.predict(image_reshape)
         print(result.shape)
         if len(result.shape) > 1:
-            result = [i for i in range(result.shape[1]) if result[0][i] == 1]
+            result = [i for i in range(result.shape[1]) if result[0][i] >= 0.5]
         return np.array(result)
 
     def getAllModels(self):
@@ -38,7 +44,10 @@ class ImagePredictor:
         try: # Simple fix -- some models have a directory underneath, others don't!
             model = models.load_model('model/' + modelName)
         except:
-            model = pickle.load(open('model/' + modelName, 'rb'))
+            try:
+                model = models.load_model('model')
+            except:
+                model = pickle.load(open('model/' + modelName, 'rb'))
         os.remove('model.zip')
         shutil.rmtree('model')
         return model
