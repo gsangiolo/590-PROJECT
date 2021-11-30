@@ -1,37 +1,41 @@
 import './App.css';
 import UploadImage from './UploadImage';
+import ImageSearch from './ImageSearch';
+import galaxy from './img/galaxy.png';
 
 function App() {
   return (
     <div className="App">
       <header className="App-header">
-        <img src='./img/100128.jpg' alt='logo'/>
         <p>
-          Explore Galaxy Identification with Our Tools Below!
+          Explore Galaxy Classification with Our Tools Below!
         </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
+		<img src={galaxy} alt='logo'/>
       </header>
       <body>
 	  <p>
-	    Search Bar Here! Search for images!
-	  </p>
-	  <p>
-	    Browse examples from our gallery -- selector for classes
-	  </p>
-	  <p>
-	    Got an image? Upload it here to classify it! (Make the model input field an autocomplete)
+	    Got an image? Upload it here to classify it!
 	  </p>
 	  <UploadImage />
+	  <br/>
+	  <br/>
 	  <p>
-	    Browse Model Options
+	    Search for images! See what images we have in our gallery, and test them on our predictor!
 	  </p>
+	  <ImageSearch />
+	  <br/>
+	  <br/>
+<div className="Footer" style={{backgroundColor: "lightgrey", fontSize: 10}}>
+        <p>
+			By George Sangiolo (gss59@georgetown.edu), Hanna Born (hkb9@georgetown.edu), and Yiming Yu (yy628@georgetown.edu)
+		</p>
+		<p>
+			Background Image from http://cdn.onlinewebfonts.com/svg/img_537674.png
+		</p>
+		<p>
+			Data and Image Gallery from https://www.kaggle.com/c/galaxy-zoo-the-galaxy-challenge/data
+		</p>
+		</div>
         </body>
     </div>
   );
