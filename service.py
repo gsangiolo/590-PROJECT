@@ -21,10 +21,10 @@ class ImagePredictor:
         return model.predict(image_reshape)
 
     def getAllModels(self):
-        return [key['Key'][:-4] for key in self.conn.list_objects(Bucket='anly590-project')['Contents'] if 'images_training_rev1' not in key['Key']]
+        return [key['Key'][7:-4] for key in self.conn.list_objects_v2(Bucket='anly590-project', Prefix='models/')['Contents'] if 'images_training_rev1' not in key['Key']]
 
     def loadModelFromS3(self, modelName):
-        self.conn.download_file('anly590-project', modelName + '.zip', 'model.zip')
+        self.conn.download_file('anly590-project', 'models/' + modelName + '.zip', 'model.zip')
         with zipfile.ZipFile('model.zip', 'r') as zip_ref:
             zip_ref.extractall('model')
         try: # Simple fix -- some models have a directory underneath, others don't!
@@ -43,11 +43,15 @@ class ImagePredictor:
         return img_png
 
     def getRandomImage(self):
-        objects = self.conn.list_objects_v2(Bucket='anly590-project', Prefix='images_training_rev1/')
-        image_keys = [obj['Key'] for obj in objects['Contents']]
+        image_keys = self.getAllImageIds()
         imageId = image_keys[random.randint(0, len(image_keys))]
         self.conn.download_file('anly590-project', imageId, 'image.jpg')
         image = cv2.imread('image.jpg')
         res, img_png = cv2.imencode(".png", image)
         os.remove('image.jpg')
         return img_png
+
+    def getAllImageIds(self):
+        objects = self.conn.list_objects_v2(Bucket='anly590-project', Prefix='images_training_rev1/')
+        image_keys = [obj['Key'] for obj in objects['Contents']]
+        return image_keys
