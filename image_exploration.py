@@ -2,8 +2,8 @@
 # coding: utf-8
 
 # In[25]:
-
-
+import pickle
+import json
 import numpy as np
 import cv2 as cv
 import matplotlib.pyplot as plt
@@ -146,7 +146,7 @@ def model_builder(hp):
 
 def tune_hyperparams(x_train, x_test, y_train, y_test):
     tuner = kt.Hyperband(model_builder,
-                         objective='val_accuracy',
+                         objective='acc',
                          max_epochs=10,
                          factor=3,
                          directory='my_dir',
@@ -154,7 +154,7 @@ def tune_hyperparams(x_train, x_test, y_train, y_test):
 
     stop_early = callbacks.EarlyStopping(monitor='val_loss', patience=5)
 
-    tuner.search(x_train, y_train, epochs=50, validation_split=0.2, batch_size=128, callbacks=[stop_early])
+    tuner.search(x_train, y_train, epochs=8, validation_split=0.2, batch_size=128, callbacks=[stop_early])
     #tuner.search(it, epochs=50, validation_split=0.2, batch_size=128, callbacks=[stop_early])
 
     # Get the optimal hyperparameters
@@ -165,14 +165,14 @@ def tune_hyperparams(x_train, x_test, y_train, y_test):
     layer is {best_hps.get('units')} and the optimal learning rate for the optimizer
     is {best_hps.get('learning_rate')}.
     """)
-    return best_hps
+    return best_hps, tuner
 
-def fit_model_from_hps(best_hps, x_train, y_train, x_test, y_test):
+def fit_model_from_hps(best_hps, tuner, x_train, y_train, x_test, y_test):
     # Build the model with the optimal hyperparameters and train it on the data for 50 epochs
     model = tuner.hypermodel.build(best_hps)
     history = model.fit(x_train, y_train, epochs=50, validation_split=0.2)
 
-    val_acc_per_epoch = history.history['val_accuracy']
+    val_acc_per_epoch = history.history['acc']
     best_epoch = val_acc_per_epoch.index(max(val_acc_per_epoch)) + 1
     print('Best epoch: %d' % (best_epoch,))
 
@@ -180,6 +180,7 @@ def fit_model_from_hps(best_hps, x_train, y_train, x_test, y_test):
 
     # Retrain the model
     history = hypermodel.fit(x_train, y_train, epochs=best_epoch, validation_split=0.2)
+    hypermodel.save("dense_feedforward_model")
 
 
     eval_result = hypermodel.evaluate(x_test, y_test)
@@ -187,14 +188,20 @@ def fit_model_from_hps(best_hps, x_train, y_train, x_test, y_test):
     return history, eval_result
 
 if __name__ == '__main__':
+    from tensorflow.python.client import device_lib
+    print(device_lib.list_local_devices())
     global multiclass
     multiclass = True
-    images, image_names = get_all_images_from_directory('../images_training_rev1/images_training_rev1/')
-    y, classes = get_image_labels(images, image_names, '../images_training_rev1/training_solutions_rev1/training_solutions_rev1.csv', multiclass_threshold=0.5)
+    images, image_names = get_all_images_from_directory('../images_training_rev1/')
+    y, classes = get_image_labels(images, image_names, '../training_solutions_rev1.csv', multiclass_threshold=0.5)
     global n_classes
     n_classes = len(classes)
-    images, y = generate_new_image_data(images, y, max_it=2)
+    images, y = generate_new_image_data(images, y, max_it=5)
     x_train, x_test, y_train, y_test = split_and_encode(images, y, test_size=0.2)
-    best_hps = tune_hyperparams(x_train, x_test, y_train, y_test)
-    history, eval_result = fit_model_from_hps(best_hps, x_train, y_train, x_test, y_test)
+    best_hps, tuner = tune_hyperparams(x_train, x_test, y_train, y_test)
+    history, eval_result = fit_model_from_hps(best_hps, tuner, x_train, y_train, x_test, y_test)
+    with open('history', 'wb') as file:
+        pickle.dump(history, file)
+    with open('evaluation.json', 'w') as file:
+        json.dump(eval_result, file)
 
