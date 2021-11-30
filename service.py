@@ -1,5 +1,6 @@
 import zipfile
 import os
+import random
 import cv2
 import shutil
 import numpy as np
@@ -42,10 +43,10 @@ class ImagePredictor:
         return img_png
 
     def getRandomImage(self):
-        objects = self.conn.list_objects_v2('anly590-project', Prefix='images_training_rev1')
+        objects = self.conn.list_objects_v2(Bucket='anly590-project', Prefix='images_training_rev1/')
         image_keys = [obj['Key'] for obj in objects['Contents']]
         imageId = image_keys[random.randint(0, len(image_keys))]
-        self.conn.download_file('anly590-project', 'images_training_rev1/' + imageId + '.jpg', 'image.jpg')
+        self.conn.download_file('anly590-project', imageId, 'image.jpg')
         image = cv2.imread('image.jpg')
         res, img_png = cv2.imencode(".png", image)
         os.remove('image.jpg')
