@@ -22,7 +22,11 @@ class ImagePredictor:
         print(image_reshape.shape)
         print("\n\n")
         model = self.loadModelFromS3(modelName)
-        return model.predict(image_reshape)
+        result = model.predict(image_reshape)
+        print(result.shape)
+        if len(result.shape) > 1:
+            result = [i for i in range(result.shape[1]) if result[0][i] == 1]
+        return np.array(result)
 
     def getAllModels(self):
         return [key['Key'][7:-4] for key in self.conn.list_objects_v2(Bucket='anly590-project', Prefix='models/')['Contents'] if 'images_training_rev1' not in key['Key']]
