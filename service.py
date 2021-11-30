@@ -1,4 +1,5 @@
 import zipfile
+import pickle
 import os
 import random
 import cv2
@@ -31,7 +32,7 @@ class ImagePredictor:
         try: # Simple fix -- some models have a directory underneath, others don't!
             model = models.load_model('model/' + modelName)
         except:
-            model = models.load_model('model')
+            model = pickle.load(open('model/' + modelName, 'rb'))
         os.remove('model.zip')
         shutil.rmtree('model')
         return model
