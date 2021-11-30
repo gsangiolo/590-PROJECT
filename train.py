@@ -8,10 +8,11 @@ import os
 import tensorflow as tf
 from sklearn.model_selection import train_test_split
 from utils.util import *
+import visualkeras
 
 from tensorflow import keras
 from tensorflow.keras import optimizers
-from model.models import SimpleCNN, Xception_Img, Inception
+from model.models import SimpleCNN, Xception_Img, Inception_Img, ResNet50_Img
 from tensorflow.keras import backend as K
 from tensorflow.keras.utils import plot_model
 from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
@@ -19,9 +20,9 @@ from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
 ORIGINAL_SIZE = 424
 IMG_SIZE = 128
 BATCH_SIZE = 32
-MODEL = 'XCEPTION'
+# MODEL = 'XCEPTION'
 # MODEL = 'DFF'
-# MODEL = 'SimpleCNN'
+MODEL = 'SimpleCNN'
 
 data_dir = 'galaxy-zoo-the-galaxy-challenge/images_training_rev1'
 solution_dir = 'galaxy-zoo-the-galaxy-challenge/training_solutions_rev1.csv'
@@ -142,6 +143,7 @@ def model_builder(hp):
         hp_learning_rate = hp.Choice('learning_rate', values=[1e-5, 1e-6, 1e-7])
         # save plot 
         plot_model(model, show_shapes=True, to_file=f'{model.name}.jpg')
+        visualkeras.layered_view(model, to_file='SimpleCNN_Layered.png')
         if not multiclass:
             model.compile(optimizer=optimizers.Adam(learning_rate=hp_learning_rate),
                         loss=losses.SparseCategoricalCrossentropy(from_logits=True),
@@ -157,6 +159,7 @@ def model_builder(hp):
         hp_learning_rate = hp.Choice('learning_rate', values=[1e-5, 1e-6, 1e-7])
         # save plot 
         plot_model(model, show_shapes=True, to_file=f'{model.name}.jpg')
+        visualkeras.layered_view(model, to_file='Xception_Layered.png')
         if not multiclass:
             model.compile(optimizer=optimizers.RMSprop(learning_rate=hp_learning_rate),
                         loss=losses.SparseCategoricalCrossentropy(from_logits=True),
@@ -165,6 +168,23 @@ def model_builder(hp):
             model.compile(optimizer=optimizers.RMSprop(learning_rate=hp_learning_rate),
                     loss='binary_crossentropy',
                     metrics=['accuracy'])
+
+    elif MODEL == 'RESNET':
+        print('ResNet50')
+        model = ResNet_Img(img_size=IMG_SIZE, num_classes=n_classes)
+        hp_learning_rate = hp.Choice('learning_rate', values=[1e-5, 1e-6, 1e-7])
+        # save plot 
+        plot_model(model, show_shapes=True, to_file=f'{model.name}.jpg')
+        visualkeras.layered_view(model, to_file='ResNet50_Layered.png')
+        if not multiclass:
+            model.compile(optimizer=optimizers.RMSprop(learning_rate=hp_learning_rate),
+                        loss=losses.SparseCategoricalCrossentropy(from_logits=True),
+                        metrics=['accuracy'])
+        else:
+            model.compile(optimizer=optimizers.RMSprop(learning_rate=hp_learning_rate),
+                    loss='binary_crossentropy',
+                    metrics=['accuracy'])
+
     return model
 
 
