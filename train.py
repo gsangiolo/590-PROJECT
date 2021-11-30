@@ -171,7 +171,7 @@ def model_builder(hp):
 
     elif MODEL == 'RESNET':
         print('ResNet50')
-        model = ResNet_Img(img_size=IMG_SIZE, num_classes=n_classes)
+        model = ResNet50_Img(img_size=IMG_SIZE, num_classes=n_classes)
         hp_learning_rate = hp.Choice('learning_rate', values=[1e-5, 1e-6, 1e-7])
         # save plot 
         plot_model(model, show_shapes=True, to_file=f'{model.name}.jpg')
