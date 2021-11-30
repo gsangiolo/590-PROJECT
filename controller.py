@@ -31,10 +31,15 @@ async def get_all_models():
     return {"result": image_service.getAllModels()}
 
 # # not sure if this will work with entering image ID
-#@app.get("/images/{image_id}")
-#async def show_image(image_id: str):
-#    image = image_service.getImageById(image_id)
-#    return FileResponse(image)
+@app.get("/images/id/{image_id}")
+async def show_image_by_id(image_id: str):
+    image = image_service.getImageById(image_id)
+    return StreamingResponse(io.BytesIO(image.tobytes()), media_type='image/png')
+
+@app.get("/images/random")
+async def show_random_image():
+    image = image_service.getRandomImage()
+    return StreamingResponse(io.BytesIO(image.tobytes()), media_type='image/png')
 
 
 # # Alternative option, have the user upload the image

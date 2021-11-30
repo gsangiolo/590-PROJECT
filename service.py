@@ -1,5 +1,6 @@
 import zipfile
 import os
+import cv2
 import shutil
 import numpy as np
 from keras import models
@@ -19,7 +20,7 @@ class ImagePredictor:
         return model.predict(image_reshape)
 
     def getAllModels(self):
-        return [key['Key'][:-4] for key in self.conn.list_objects(Bucket='anly590-project')['Contents']]
+        return [key['Key'][:-4] for key in self.conn.list_objects(Bucket='anly590-project')['Contents'] if 'images_training_rev1' not in key['Key']]
 
     def loadModelFromS3(self, modelName):
         self.conn.download_file('anly590-project', modelName + '.zip', 'model.zip')
@@ -32,3 +33,20 @@ class ImagePredictor:
         os.remove('model.zip')
         shutil.rmtree('model')
         return model
+
+    def getImageById(self, imageId):
+        self.conn.download_file('anly590-project', 'images_training_rev1/' + imageId + '.jpg', 'image.jpg')
+        image = cv2.imread('image.jpg')
+        res, img_png = cv2.imencode(".png", image)
+        os.remove('image.jpg')
+        return img_png
+
+    def getRandomImage(self):
+        objects = self.conn.list_objects_v2('anly590-project', Prefix='images_training_rev1')
+        image_keys = [obj['Key'] for obj in objects['Contents']]
+        imageId = image_keys[random.randint(0, len(image_keys))]
+        self.conn.download_file('anly590-project', 'images_training_rev1/' + imageId + '.jpg', 'image.jpg')
+        image = cv2.imread('image.jpg')
+        res, img_png = cv2.imencode(".png", image)
+        os.remove('image.jpg')
+        return img_png
