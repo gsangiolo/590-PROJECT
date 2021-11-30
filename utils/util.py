@@ -12,13 +12,16 @@ import keras_tuner as kt
 global multiclass
 multiclass = True
 
+IMG_SIZE = 128
 
 def get_all_images_from_directory(dir, max_images=1000):
     for filename in os.listdir(dir):
         sample_img = cv.imread(os.path.join(dir, filename))
         break
     shape = sample_img.shape
-    images = np.zeros(shape=(max_images, shape[0], shape[1], shape[2]))
+    # images = np.zeros(shape=(max_images, shape[0], shape[1], shape[2]))
+    images = np.zeros(shape=(max_images, IMG_SIZE, IMG_SIZE, shape[2]))
+
     image_names = []
     #max_images = 1000
     count = 0
@@ -28,6 +31,7 @@ def get_all_images_from_directory(dir, max_images=1000):
             break
         #print(os.path.join(dir, filename))
         img = cv.imread(os.path.join(dir, filename))
+        img = cv.resize(img, (IMG_SIZE, IMG_SIZE))
         images[count] = img
         image_names.append(filename[:-4])
         count += 1
@@ -55,12 +59,12 @@ def get_image_labels(images, image_names, solutions_path, multiclass_threshold=0
     return y, classes
 
 
-def generate_new_image_data(images, y, max_it=10):
+def generate_new_image_data(images, y, max_it=10, return_images=False):
     datagen = ImageDataGenerator()
     datagen.fit(images)
 
-    print(images.shape)
-    print(len(y))
+    # print(images.shape)
+    # print(len(y))
 
     it = datagen.flow(images, y)
 
@@ -76,10 +80,14 @@ def generate_new_image_data(images, y, max_it=10):
             print(count)
         count += 1
 
-    # print(images.shape)
-    # print(len(y))
+    print("image shape: ", images.shape)
+    print(len(y))
 
-    images = images.reshape((images.shape[0], images[0].shape[0] * images[0].shape[1] * images[0].shape[2]))
+    if return_images:
+        images = images.reshape(images.shape[0], images.shape[1], images.shape[2], images.shape[3])
+    else:
+        images = images.reshape((images.shape[0], images[0].shape[0] * images[0].shape[1] * images[0].shape[2]))
+    
     return images, y
 
 

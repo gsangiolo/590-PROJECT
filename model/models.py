@@ -42,21 +42,29 @@ def SimpleCNN(img_size, num_classes):
 
     return model
 
-def Xception(img_size, num_classes):
-    model = Sequential(name='Xception')
-    model.add(Xception(include_top=False, input_shape=(img_size, img_size, 3), weights='imagenet', pooling='avg'))
-    model.add(Flatten())
-    model.add(Dense(512))
-    model.add(Activation('relu'))
-    model.add(Dropout(0.1))
+def Xception_Img(img_size, num_classes):
+    # model = Sequential(name='Xception')
+    # model.add(Xception(include_top=False, input_shape=(img_size, img_size, 3), weights='imagenet', pooling='avg'))
+    # model.add(Flatten())
+    # model.add(Dense(512))
+    # model.add(Activation('relu'))
+    # model.add(Dropout(0.1))
+    base_model = Xception(include_top=False, input_shape=(img_size, img_size, 3), weights='imagenet')
+    x = base_model.output
+    x = GlobalAveragePooling2D()(x)
+    x = Dense(1024, activation='relu')(x)
 
     if multiclass:
-        model.add(Dense(num_classes, kernel_initializer='he_normal'))
-        model.add(Activation('sigmoid'))
+        predictions = Dense(num_classes, activation='sigmoid')(x)
     else:
-        model.add(Dense(num_classes, kernel_initializer='he_normal'))
-        model.add(Activation('softmax'))
+        predictions = Dense(num_classes, activation='softmax')(x)
+    model = Model(inputs=base_model.input, outputs=predictions)
 
+    for layer in base_model.layers:
+        layer.trainable = False
+    
+    model._name = "Xception"
+    
     return model
 
 def Inception(img_size, num_classes):

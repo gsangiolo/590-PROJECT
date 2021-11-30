@@ -11,17 +11,17 @@ from utils.util import *
 
 from tensorflow import keras
 from tensorflow.keras import optimizers
-from model.models import SimpleCNN, Xception, Inception
+from model.models import SimpleCNN, Xception_Img, Inception
 from tensorflow.keras import backend as K
 from tensorflow.keras.utils import plot_model
 from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
 
 ORIGINAL_SIZE = 424
-IMG_SIZE = 424
+IMG_SIZE = 128
 BATCH_SIZE = 32
-# MODEL = 'XCEPTION'
+MODEL = 'XCEPTION'
 # MODEL = 'DFF'
-MODEL = 'SimpleCNN'
+# MODEL = 'SimpleCNN'
 
 data_dir = 'galaxy-zoo-the-galaxy-challenge/images_training_rev1'
 solution_dir = 'galaxy-zoo-the-galaxy-challenge/training_solutions_rev1.csv'
@@ -98,12 +98,16 @@ def split_and_encode(images, y, test_size=0.2):
         lb = LabelEncoder()
         y_train = lb.fit_transform(y_train)
         y_test = lb.transform(y_test)
+    print("y_train", x_train)
+    print("y_test", y_train)
     return x_train, x_test, y_train, y_test
 
 
 def model_builder(hp):
 
+    print("Model Building...")
     if MODEL == 'DFF':
+        print('Using DFF model')
         model = Sequential()
         if not multiclass:
             model.add(layers.Flatten(input_shape=(1, x_train.shape[1])))
@@ -133,7 +137,8 @@ def model_builder(hp):
                     metrics=['accuracy'])
     
     elif MODEL == 'SimpleCNN':
-        model = SimpleCNN(img_size=IMG_SIZE, batch_size=x_train.shape[0], num_classes=n_classes)
+        print('SimpleCNN')
+        model = SimpleCNN(img_size=IMG_SIZE, num_classes=n_classes)
         hp_learning_rate = hp.Choice('learning_rate', values=[1e-5, 1e-6, 1e-7])
         # save plot 
         plot_model(model, show_shapes=True, to_file=f'{model.name}.jpg')
@@ -147,7 +152,8 @@ def model_builder(hp):
                     metrics=['accuracy'])
     
     elif MODEL == 'XCEPTION':
-        model = Xception(img_size=IMG_SIZE, batch_size=x_train.shape[0], num_classes=n_classes)
+        print('XCEPTION')
+        model = Xception_Img(img_size=IMG_SIZE, num_classes=n_classes)
         hp_learning_rate = hp.Choice('learning_rate', values=[1e-5, 1e-6, 1e-7])
         # save plot 
         plot_model(model, show_shapes=True, to_file=f'{model.name}.jpg')
@@ -164,6 +170,7 @@ def model_builder(hp):
 
 def fit_model_from_hps(x_train, y_train, x_test, y_test, hyperband=True):
     if hyperband:
+        print('Using Hyperband')
         tuner = kt.Hyperband(model_builder,
                             objective='val_accuracy',
                             max_epochs=10,
@@ -172,17 +179,19 @@ def fit_model_from_hps(x_train, y_train, x_test, y_test, hyperband=True):
                             # max_trail = 3
                             )
     else:
+        print('Using RandomSearch')
         tuner = kt.RandomSearch(model_builder,
                                 objective='val_accuracy',
                                 max_trials=4)
 
     stop_early = callbacks.EarlyStopping(monitor='val_loss', patience=5)
 
-    tuner.search(x_train, y_train, epochs=50, validation_split=0.2, batch_size=16, callbacks=[stop_early, keras.callbacks.TensorBoard(log_dir='logs/fit/tuner')])
+    tuner.search(x_train, y_train, epochs=50, validation_split=0.2, batch_size=BATCH_SIZE, callbacks=[stop_early, keras.callbacks.TensorBoard(log_dir='logs/fit/tuner')])
     #tuner.search(it, epochs=50, validation_split=0.2, batch_size=128, callbacks=[stop_early])
 
     # Get the optimal hyperparameters
     best_hps=tuner.get_best_hyperparameters(num_trials=1)[0]
+    print(best_hps.get('learning_rate'))
 
     # print(f"""
     # The hyperparameter search is complete. The optimal number of units in the first densely-connected
@@ -190,19 +199,20 @@ def fit_model_from_hps(x_train, y_train, x_test, y_test, hyperband=True):
     # is {best_hps.get('learning_rate')}.
     # """)
 
-    # # Build the model with the optimal hyperparameters and train it on the data for 50 epochs
-    # model = tuner.hypermodel.build(best_hps)
-    # # model.name = 'hypermodel' + MODEL
+    # Build the model with the optimal hyperparameters and train it on the data for 50 epochs
+    model = tuner.hypermodel.build(best_hps)
+    # model.name = 'hypermodel' + MODEL
 
-    # history = model.fit(x_train, y_train, epochs=20, validation_split=0.2)
+    history = model.fit(x_train, y_train, epochs=40, validation_split=0.2)
 
-    # val_acc_per_epoch = history.history['val_accuracy']
-    # best_epoch = val_acc_per_epoch.index(max(val_acc_per_epoch)) + 1
-    # print('Best epoch: %d' % (best_epoch,))
+    val_acc_per_epoch = history.history['val_accuracy']
+    best_epoch = val_acc_per_epoch.index(max(val_acc_per_epoch)) + 1
+    print('Best epoch: %d' % (best_epoch,))
 
     hypermodel = tuner.hypermodel.build(best_hps)
     # hypermodel.name = 'hypermodel ' + MODEL
 
+    print('set best model')
     # bast model checkout and early stopping
     checkout_best_model = 'weights/Best_Model_' + hypermodel.name + '.h5'
     # es = EarlyStopping(monitor='val_loss', mode='min', verbose=1, patience=150)
@@ -214,7 +224,7 @@ def fit_model_from_hps(x_train, y_train, x_test, y_test, hyperband=True):
 
     # Retrain the model
     history = hypermodel.fit(x_train, y_train, 
-                            epochs=50, 
+                            epochs=best_epoch, 
                             validation_split=0.2,
                             # steps_per_epoch=x_train.shape[0] // BATCH_SIZE, 
                             use_multiprocessing=True,
@@ -226,6 +236,7 @@ def fit_model_from_hps(x_train, y_train, x_test, y_test, hyperband=True):
                             tensorboard_callback]
                             )
 
+    hypermodel.save(f'model/{hypermodel.name}.h5')
 
     eval_result = hypermodel.evaluate(x_test, y_test)
     print("[test loss, test accuracy]:", eval_result)
@@ -247,5 +258,5 @@ if __name__ == '__main__':
     else:
         images, y = generate_new_image_data(images, y, max_it=1, return_images=True)
     x_train, x_test, y_train, y_test = split_and_encode(images, y, test_size=0.2)
-    if MODEL != 'XCEPTION':
-        history, eval_result = fit_model_from_hps(x_train, y_train, x_test, y_test)
+    history, eval_result = fit_model_from_hps(x_train, y_train, x_test, y_test)
+    
