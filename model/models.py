@@ -68,7 +68,7 @@ def Xception_Img(img_size, num_classes):
     return model
 
 def Inception(img_size, num_classes):
-    base_model = InceptionV3(include_top=False, input_shape=(img_size, img_size, 3), weights='imagenet', pooling='avg')
+    base_model = InceptionV3(include_top=False, input_shape=(img_size, img_size, 3), weights='imagenet')
     x = base_model.output
     x = GlobalAveragePooling2D()(x)
     x = Dense(1024, activation='relu')(x)
