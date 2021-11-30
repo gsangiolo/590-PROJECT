@@ -65,5 +65,6 @@ class ImagePredictor:
 #         for i in range(min(x,y), max(x,y)):
 #             if argmaxes[i] == myClass:
 #                 print("Galaxy Class: ", myClass)
-#                 return getImageById(i)
+#                 imageFile = i + 100008 # image filenames start at 100008
+#                 return getImageById(imageFile)
 #         return "no images of specified class found"
