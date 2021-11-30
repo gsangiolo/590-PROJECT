@@ -3,7 +3,10 @@ from fastapi.middleware.cors import CORSMiddleware
 import numpy as np
 import service
 import cv2
-#from model import ModelParams
+
+# from fastapi.responses import FileResponse
+
+# #from model import ModelParams
 
 app = FastAPI()
 
@@ -26,6 +29,21 @@ async def root():
 @app.get("/models-list")
 async def get_all_models():
     return {"result": image_service.getAllModels()}
+
+# # not sure if this will work with entering image ID
+#@app.get("/images/{image_id}")
+#async def show_image(image_id: str):
+#    image = image_service.getImageById(image_id)
+#    return FileResponse(image)
+
+
+# # Alternative option, have the user upload the image
+# # and return predicted class
+         
+#     imagetype = image.filename.split(".")[-1] in ("jpg", "jpeg", "png")
+#     if not imagetype:
+#         return "Image filetype must be .jpg, .jpeg, or .png"
+
 
 @app.post("/predict")
 async def predict_image(model: str = Form(...), image: UploadFile = File(...)):
