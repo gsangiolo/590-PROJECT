@@ -16,7 +16,8 @@ class ImagePredictor:
         self.conn = client('s3', aws_access_key_id='AKIAQW4FQ6E4M74BPQXK', aws_secret_access_key='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')
 
     def predict_image(self, image, modelName='super_simple_model'):
-        image_reshape = np.reshape(image, (1, np.prod(image.shape)))
+        image = cv2.resize(image, (424, 424), interpolation = cv2.INTER_AREA)
+        image_reshape = np.reshape(image, (1, 424*424*3)) #np.prod(image.shape)))
         print(image_reshape.shape)
         print("\n\n")
         model = self.loadModelFromS3(modelName)
@@ -38,7 +39,7 @@ class ImagePredictor:
         return model
 
     def getImageById(self, imageId):
-        self.conn.download_file('anly590-project', 'images_training_rev1/' + imageId + '.jpg', 'image.jpg')
+        self.conn.download_file('anly590-project', 'images_training_rev1/images_training_rev1/' + imageId + '.jpg', 'image.jpg')
         image = cv2.imread('image.jpg')
         res, img_png = cv2.imencode(".png", image)
         os.remove('image.jpg')

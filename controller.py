@@ -46,7 +46,7 @@ async def show_random_image(hash: str = ''):
 @app.get("/images/all")
 async def get_all_image_ids():
     image_names = image_service.getAllImageIds()
-    return {'images': image_names}
+    return {'images': [img[42:-4] for img in image_names]}
 
 # # Alternative option, have the user upload the image
 # # and return predicted class
