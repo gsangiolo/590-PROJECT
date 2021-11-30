@@ -43,6 +43,13 @@ async def show_random_image(hash: str = ''):
     image = image_service.getRandomImage()
     return StreamingResponse(io.BytesIO(image.tobytes()), media_type='image/png')
 
+@app.get("/images/class")
+async def show_random_image_from_class(img_class: str, hash: str = ''):
+    image = image_service.getRandomImageByClass(img_class)
+    if image is None:
+        return {"message": "Could not find a good image!"}
+    return  StreamingResponse(io.BytesIO(image.tobytes()), media_type='image/png')
+
 @app.get("/images/all")
 async def get_all_image_ids():
     image_names = image_service.getAllImageIds()

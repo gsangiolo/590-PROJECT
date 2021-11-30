@@ -5,6 +5,7 @@ import random
 import cv2
 import shutil
 import numpy as np
+import pandas as pd
 from keras import models
 from boto3 import client
 from tensorflow.python.lib.io import file_io
@@ -59,14 +60,27 @@ class ImagePredictor:
         image_keys = [obj['Key'] for obj in objects['Contents']]
         return image_keys
     
-#     def getRandomImageByClass(self, myClass):
-#         objects = self.conn.list_objects_v2('anly590-project', Prefix='images_training_rev1_argmaxes') ## how to read csv file in ?? 
-#         argmaxes = np.load(objects)
-#         x = random.randint(0, len(argmaxes))
-#         y = random.randint(0, len(argmaxes))
-#         for i in range(min(x,y), max(x,y)):
-#             if argmaxes[i] == myClass:
-#                 print("Galaxy Class: ", myClass)
-#                 imageFile = i + 100008 # image filenames start at 100008
-#                 return getImageById(imageFile)
-#         return "no images of specified class found"
+    def getRandomImageByClass(self, myClass, threshold=0.5):
+        self.conn.download_file('anly590-project', 'images_training_rev1/training_solutions_rev1/training_solutions_rev1.csv', 'solutions.csv')
+        solutions = pd.read_csv('solutions.csv', index_col='GalaxyID', na_values=['(NA)']).fillna(0)
+        myClass = int(myClass)
+        solutions_in_class = solutions[solutions[solutions.columns[myClass]] >= threshold]
+        image_keys = solutions_in_class.index.tolist()
+        success = False
+        count = 0
+        while not success:
+            imageId = 'images_training_rev1/images_training_rev1/' + str(image_keys[random.randint(0, len(image_keys) - 1)]) + '.jpg'
+            try:
+                self.conn.download_file('anly590-project', imageId, 'image.jpg')
+                success = True
+            except:
+                print("Could not find this image? ", imageId)
+            count += 1
+            if count >= 1000:
+                os.remove('solutions.csv')
+                return None
+        image = cv2.imread('image.jpg')
+        res, img_png = cv2.imencode(".png", image)
+        os.remove('image.jpg')
+        os.remove('solutions.csv')
+        return img_png
