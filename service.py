@@ -7,6 +7,7 @@ import numpy as np
 from keras import models
 from boto3 import client
 from tensorflow.python.lib.io import file_io
+# import numpy as np
 
 class ImagePredictor:
 
@@ -55,3 +56,14 @@ class ImagePredictor:
         objects = self.conn.list_objects_v2(Bucket='anly590-project', Prefix='images_training_rev1/')
         image_keys = [obj['Key'] for obj in objects['Contents']]
         return image_keys
+    
+#     def getRandomImageByClass(self, myClass):
+#         objects = self.conn.list_objects_v2('anly590-project', Prefix='images_training_rev1_argmaxes') ## how to read csv file in ?? 
+#         argmaxes = np.load(objects)
+#         x = random.randint(0, len(argmaxes))
+#         y = random.randint(0, len(argmaxes))
+#         for i in range(min(x,y), max(x,y)):
+#             if argmaxes[i] == myClass:
+#                 print("Galaxy Class: ", myClass)
+#                 return getImageById(i)
+#         return "no images of specified class found"
