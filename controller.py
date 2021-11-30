@@ -33,8 +33,8 @@ async def get_all_models():
     return {"result": image_service.getAllModels()}
 
 # # not sure if this will work with entering image ID
-@app.get("/images/id/{image_id}")
-async def show_image_by_id(image_id: str):
+@app.get("/images/id")
+async def show_image_by_id(image_id: str, hash: str = ''):
     image = image_service.getImageById(image_id)
     return StreamingResponse(io.BytesIO(image.tobytes()), media_type='image/png')
 
@@ -43,6 +43,10 @@ async def show_random_image(hash: str = ''):
     image = image_service.getRandomImage()
     return StreamingResponse(io.BytesIO(image.tobytes()), media_type='image/png')
 
+@app.get("/images/all")
+async def get_all_image_ids():
+    image_names = image_service.getAllImageIds()
+    return {'images': image_names}
 
 # # Alternative option, have the user upload the image
 # # and return predicted class
