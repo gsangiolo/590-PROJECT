@@ -14,7 +14,7 @@ from tensorflow.python.lib.io import file_io
 class ImagePredictor:
 
     def __init__(self):
-        self.conn = client('s3', aws_access_key_id='AKIAQW4FQ6E4M74BPQXK', aws_secret_access_key='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')
+        self.conn = client('s3', aws_access_key_id='access_key(deactivated)', aws_secret_access_key='secret_key(deactivated)')
 
     def predict_image(self, image, modelName='super_simple_model'):
         image = cv2.resize(image, (424, 424), interpolation = cv2.INTER_AREA)
